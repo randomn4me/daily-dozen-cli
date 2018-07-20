@@ -35,6 +35,10 @@ gregers_dozen = {
 string_size = max([len(s) for s in gregers_dozen.keys()])
 
 
+def usage(ap):
+    ap.print_help()
+    exit(1)
+
 def quitting():
     exit(0)
 
@@ -80,24 +84,32 @@ def read_file(file_name):
         print(f'Reading file {file_name} failed.')
         exit(1)
 
-def list_files(details):
+def list_files():
     last_files = sorted([f for f in os.listdir(cache_dir) if
             os.path.isfile(os.path.join(cache_dir, f))])
-    if details:
-        for f in last_files:
-            print(f'Dozen of {f}')
-            path = os.path.join(cache_dir, f)
-            old_dozen = read_file(path)
-            pretty_print(old_dozen)
-    else:
-        string = 'Your last dozen'
-        print(f'+{(len(string)+2) * "-"}+')
-        print(f'| {string} |')
-        print(f'+{(len(string)+2) * "-"}+')
-        for f in last_files:
-            print(f'| {f:{len(string)}} |')
 
-        print(f'+{(len(string)+2) * "-"}+')
+    string = 'Your last dozen'
+    print(f'+{(len(string)+2) * "-"}+')
+    print(f'| {string} |')
+    print(f'+{(len(string)+2) * "-"}+')
+
+    for f in last_files:
+        print(f'| {f:{len(string)}} |')
+
+    print(f'+{(len(string)+2) * "-"}+')
+
+    exit(0)
+
+def details(date):
+    date_file = os.path.join(cache_dir, str(date))
+
+    if os.path.isfile(date_file):
+        content = read_file(date_file)
+        print('detailed dozen')
+        pretty_print(content)
+    else:
+        print(f'No stored dozens for {date}')
+
     exit(0)
 
 def edit(date):
@@ -125,9 +137,8 @@ def main():
     ap.add_argument('-l', '--last',
             action='store_true', default=False,
             help='Print last dozen')
-    ap.add_argument('-d', '--details',
-            action='store_true', default=False,
-            help='Print details (assumes --last)')
+    ap.add_argument('-d', '--details', type=str,
+            help='Print details of a certain date in iso format (e.g. 2018-07-20)')
     ap.add_argument('-e', '--edit', type=int,
             help='Edit the n-th last entry (e.g. editing today: -e 0)')
 
@@ -136,12 +147,17 @@ def main():
     print(f'Welcome to daily dozen cli! Today is {today}')
 
     if args.last:
-        list_files(args.details)
+        list_files()
+    elif args.details is not None:
+        try:
+            year, month, day = map(int, args.details.split('-'))
+            date = datetime.date(year, month, day)
+        except ValueError:
+            usage(ap)
+        details(date)
     elif args.edit is not None:
         if args.edit < 0:
-            ap.print_help()
-            exit(1)
-
+            usage(ap)
         edit(today - datetime.timedelta(days=args.edit))
 
     today_file = os.path.join(cache_dir, str(today))
