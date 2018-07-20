@@ -95,9 +95,9 @@ def list_files():
     last_files = get_stored_files()
 
     string = 'Your last dozen'
-    print(f'+{(len(string)+2) * "-"}+')
+    print(f'+{(len(string) + 2) * "-"}+')
     print(f'| {string} |')
-    print(f'+{(len(string)+2) * "-"}+')
+    print(f'+{(len(string) + 2) * "-"}+')
 
     for f in last_files:
         print(f'| {f:{len(string)}} |')
@@ -111,7 +111,7 @@ def details(date):
 
     if os.path.isfile(date_file):
         content = read_file(date_file)
-        print('detailed dozen')
+        print(f'detailed dozen from {date}')
         dozen_pretty_print(content)
     else:
         print(f'No stored dozens for {date}')
