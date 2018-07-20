@@ -9,9 +9,8 @@ import sys
 from collections import OrderedDict
 from tabulate import tabulate
 
-cache_dir = os.path.join(
-        os.environ.get('XDG_CACHE_HOME', os.path.expanduser(os.path.join('~', '.cache'))), 
-        'daily-dozen-cli')
+storage = os.path.join(
+        os.environ.get('HOME', os.path.expanduser('~')), '.daily-dozen')
 
 today = datetime.date.today()
 
@@ -62,7 +61,7 @@ def get_dozen():
 
     return dozen
 
-def pretty_print(content_dict):
+def dozen_pretty_print(content_dict):
     print(tabulate(content_dict.items(), ['dozen', 'num'], tablefmt='psql'))
 
 def write_file(user_dozen, file_name):
@@ -84,9 +83,16 @@ def read_file(file_name):
         print(f'Reading file {file_name} failed.')
         exit(1)
 
+def get_stored_files(num=None):
+    files = sorted([f for f in os.listdir(storage) if
+        os.path.isfile(os.path.join(storage, f))])
+    if num is not None and num > 0:
+        return files[-num:]
+    return files
+
+
 def list_files():
-    last_files = sorted([f for f in os.listdir(cache_dir) if
-            os.path.isfile(os.path.join(cache_dir, f))])
+    last_files = get_stored_files()
 
     string = 'Your last dozen'
     print(f'+{(len(string)+2) * "-"}+')
@@ -101,35 +107,44 @@ def list_files():
     exit(0)
 
 def details(date):
-    date_file = os.path.join(cache_dir, str(date))
+    date_file = os.path.join(storage, str(date))
 
     if os.path.isfile(date_file):
         content = read_file(date_file)
         print('detailed dozen')
-        pretty_print(content)
+        dozen_pretty_print(content)
     else:
         print(f'No stored dozens for {date}')
 
     exit(0)
 
 def edit(date):
-    edit_file = os.path.join(cache_dir, str(date))
+    edit_file = os.path.join(storage, str(date))
 
     if os.path.isfile(edit_file):
         old_dozen = read_file(edit_file)
         print('Your old dozen you want to edit')
-        pretty_print(old_dozen)
+        dozen_pretty_print(old_dozen)
 
     user_dozen = get_dozen()
-    pretty_print(user_dozen)
+    dozen_pretty_print(user_dozen)
     write_file(user_dozen, edit_file)
 
     exit(0)
 
-def main():
-    if not os.path.isdir(cache_dir):
-        os.makedirs(cache_dir)
+def statistics(num):
+    files = get_stored_files(num)
+    gregers_without = [k for k in gregers_dozen.keys() if k not in ['vitamine b12', 'vitamine d3']]
 
+    stats = dict()
+    for f in files:
+        dozen = read_file(os.path.join(storage, f))
+        stats[f] = sum(list(dozen.values()))
+
+    print(tabulate(stats.items(), ['date', 'sum'], tablefmt='psql'))
+    exit(0)
+
+def main():
     ap = argparse.ArgumentParser(
             description='Store your daily dozen of plant based essentials.',
             formatter_class=argparse.RawTextHelpFormatter)
@@ -139,10 +154,15 @@ def main():
             help='Print last dozen')
     ap.add_argument('-d', '--details', type=str,
             help='Print details of a certain date in iso format (e.g. 2018-07-20)')
-    ap.add_argument('-e', '--edit', type=int,
-            help='Edit the n-th last entry (e.g. editing today: -e 0)')
+    ap.add_argument('-e', '--edit', type=int, const=0, nargs='?',
+            help='Edit the n-th last entry [defaults to 0] (e.g. editing yesterday: -e 1)')
+    ap.add_argument('-s', '--stats', type=int, const=7, nargs='?',
+            help='Show the sum of points for the last days (excluding b12, d3) [defaults to 7]')
 
     args = ap.parse_args()
+
+    if not os.path.isdir(storage):
+        os.makedirs(storage)
 
     print(f'Welcome to daily dozen cli! Today is {today}')
 
@@ -159,18 +179,20 @@ def main():
         if args.edit < 0:
             usage(ap)
         edit(today - datetime.timedelta(days=args.edit))
+    elif args.stats is not None:
+        statistics(args.stats)
+    else:
+        today_file = os.path.join(storage, str(today))
 
-    today_file = os.path.join(cache_dir, str(today))
+        if os.path.isfile(today_file):
+            content = read_file(today_file)
+            print('todays dozen')
+            dozen_pretty_print(content)
+            exit(0)
 
-    if os.path.isfile(today_file):
-        content = read_file(today_file)
-        print('todays dozen')
-        pretty_print(content)
-        exit(0)
-
-    user_dozen = get_dozen()
-    pretty_print(user_dozen)
-    write_file(user_dozen, today_file)
+        user_dozen = get_dozen()
+        dozen_pretty_print(user_dozen)
+        write_file(user_dozen, today_file)
 
 
 if __name__ == '__main__':
