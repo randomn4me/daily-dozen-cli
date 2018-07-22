@@ -39,7 +39,12 @@ def usage(ap):
     exit(1)
 
 def quitting():
+    print('Quitting daily dozen. Aborting action.')
     exit(0)
+
+def iso_to_date(isoformat_string):
+    year, month, day = map(int, isoformat_string.split('-'))
+    return datetime.date(year, month, day)
 
 def read_user_input(text, max_num):
     user_input = input(f'{text} (max. {max_num}): ')
@@ -53,7 +58,7 @@ def read_user_input(text, max_num):
     return min(user_num, max_num)
 
 def get_dozen():
-    print('Let\'s read your dozen:')
+    print('Let\'s read your dozen (quit with \'q\'):')
     dozen = OrderedDict()
 
     for key in gregers_dozen.keys():
@@ -69,7 +74,7 @@ def write_file(user_dozen, file_name):
         with open(file_name, 'w') as f:
             f.write(json.dumps(user_dozen))
     except:
-        print(f'Writing to file {file_name} failed.\nReverting operation')
+        print(f'Writing to file {file_name} failed. Abort.')
         if os.path.isfile(file_name):
             os.remove(file_name)
         exit(1)
@@ -114,7 +119,7 @@ def details(date):
         print(f'detailed dozen from {date}')
         dozen_pretty_print(content)
     else:
-        print(f'No stored dozens for {date}')
+        print(f'No dozens logged for {date}')
 
     exit(0)
 
@@ -123,7 +128,7 @@ def edit(date):
 
     if os.path.isfile(edit_file):
         old_dozen = read_file(edit_file)
-        print('Your old dozen you want to edit')
+        print(f'Your old dozen for {date}')
         dozen_pretty_print(old_dozen)
 
     user_dozen = get_dozen()
@@ -131,6 +136,17 @@ def edit(date):
     write_file(user_dozen, edit_file)
 
     exit(0)
+
+def check_forgotten():
+    day_delta = datetime.timedelta(days=1)
+
+    files = get_stored_files()
+    date = iso_to_date(files[0])
+
+    while date < today:
+        if str(date) not in files:
+            print(f'You forgot to log {date}')
+        date += day_delta
 
 def statistics(num):
     files = get_stored_files(num)
@@ -146,7 +162,7 @@ def statistics(num):
 
 def main():
     ap = argparse.ArgumentParser(
-            description='Store your daily dozen of plant based essentials.',
+            description='Log your daily dozen of plant based essentials.',
             formatter_class=argparse.RawTextHelpFormatter)
 
     ap.add_argument('-l', '--last',
@@ -166,12 +182,13 @@ def main():
 
     print(f'Welcome to daily dozen cli! Today is {today}')
 
+    check_forgotten()
+
     if args.last:
         list_files()
     elif args.details is not None:
         try:
-            year, month, day = map(int, args.details.split('-'))
-            date = datetime.date(year, month, day)
+            date = iso_to_date(args.details)
         except ValueError:
             usage(ap)
         details(date)
