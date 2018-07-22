@@ -23,10 +23,10 @@ gregers_dozen = {
     'vegetables': 2,
     'flaxseed': 1,
     'nuts': 1,
-    'grains': 3,
     'spices': 1,
-    'exercise': 1,
+    'grains': 3,
     'beverages': 5,
+    'exercise': 1,
     'vitamine b12': 1,
     'vitamine d3': 1
 }
@@ -157,7 +157,28 @@ def statistics(num):
         dozen = read_file(os.path.join(storage, f))
         stats[f] = sum(list(dozen.values()))
 
-    print(tabulate(stats.items(), ['date', 'sum'], tablefmt='psql'))
+    return stats
+
+def plot(stats_dict):
+    values = stats_dict.values()
+    cur_value = 24
+
+    print()
+    while cur_value > 0:
+        print_dates = dict(stats_dict)
+        for k, v in stats_dict.items():
+            print_dates[k] = '^' if v >= cur_value else ' '
+
+        print(f'{cur_value:2} | {"  ".join(print_dates.values())}')
+        cur_value -= 1
+
+    print(f'   +{"---" * len(print_dates)}-')
+
+    print(f'    {" ".join([d[-2:] for d in stats_dict.keys()])}')
+
+def graph(days):
+    stats = statistics(days)
+    plot(stats)
     exit(0)
 
 def main():
@@ -174,6 +195,8 @@ def main():
             help='Edit the n-th last entry [defaults to 0] (e.g. editing yesterday: -e 1)')
     ap.add_argument('-s', '--stats', type=int, const=7, nargs='?',
             help='Show the sum of points for the last days (excluding b12, d3) [defaults to 7]')
+    ap.add_argument('-g', '--graph', type=int, const=30, nargs='?',
+            help='Plotting statistic into file using the last n logs [defaults to 30].')
 
     args = ap.parse_args()
 
@@ -197,7 +220,11 @@ def main():
             usage(ap)
         edit(today - datetime.timedelta(days=args.edit))
     elif args.stats is not None:
-        statistics(args.stats)
+        stats = statistics(args.stats)
+        print(tabulate(stats.items(), ['date', 'sum'], tablefmt='psql'))
+        exit(0)
+    elif args.graph is not None:
+        graph(args.graph)
     else:
         today_file = os.path.join(storage, str(today))
 
