@@ -192,11 +192,11 @@ def main():
     ap.add_argument('-d', '--details', type=str,
             help='Print details of a certain date in iso format (e.g. 2018-07-20)')
     ap.add_argument('-e', '--edit', type=int, const=0, nargs='?',
-            help='Edit the n-th last entry [defaults to 0] (e.g. editing yesterday: -e 1)')
+            help='Edit the n-th last entry (e.g. editing yesterday: -e 1) [defaults to 0]')
     ap.add_argument('-s', '--stats', type=int, const=7, nargs='?',
             help='Show the sum of points for the last days (excluding b12, d3) [defaults to 7]')
     ap.add_argument('-g', '--graph', type=int, const=30, nargs='?',
-            help='Plotting statistic into file using the last n logs [defaults to 30].')
+            help='Plotting statistic using upto the last n logs [defaults to 30].')
 
     args = ap.parse_args()
 
