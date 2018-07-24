@@ -124,7 +124,7 @@ def details(date):
     exit(0)
 
 def edit(date):
-    print('editing dozen for date {date}'}
+    print('editing dozen for date {date}')
     edit_file = os.path.join(storage, str(date))
 
     if os.path.isfile(edit_file):
