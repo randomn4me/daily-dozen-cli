@@ -43,8 +43,13 @@ def quitting():
     exit(0)
 
 def iso_to_date(isoformat_string):
-    year, month, day = map(int, isoformat_string.split('-'))
-    return datetime.date(year, month, day)
+    try:
+        year, month, day = map(int, isoformat_string.split('-'))
+        date = datetime.date(year, month, day)
+        return date
+    except:
+        print('error reading date')
+        quitting()
 
 def read_user_input(text, max_num):
     user_input = input(f'{text} (max. {max_num}): ')
