@@ -151,12 +151,11 @@ def check_forgotten():
 
 def statistics(num):
     files = get_stored_files(num)
-    gregers_without = [k for k in gregers_dozen.keys() if k not in ['vitamine b12', 'vitamine d3']]
 
     stats = dict()
     for f in files:
         dozen = read_file(os.path.join(storage, f))
-        stats[f] = sum(list(dozen.values()))
+        stats[f] = sum([dozen[k] for k in dozen.keys() if k not in ['vitamine b12', 'vitamine d3']])
 
     return stats
 
