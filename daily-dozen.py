@@ -4,7 +4,6 @@ import argparse
 import datetime
 import os
 import json
-import sys
 
 from collections import OrderedDict
 from tabulate import tabulate
@@ -30,8 +29,6 @@ gregers_dozen = {
     'vitamine b12': 1,
     'vitamine d3': 1
 }
-
-string_size = max([len(s) for s in gregers_dozen.keys()])
 
 
 def usage(ap):
@@ -62,7 +59,7 @@ def read_user_input(text, max_num):
         return read_user_input(text, max_num)
     return min(user_num, max_num)
 
-def get_dozen():
+def get_user_dozen():
     print('Let\'s read your dozen (quit with \'q\'):')
     dozen = OrderedDict()
 
@@ -100,6 +97,12 @@ def get_stored_files(num=None):
         return files[-num:]
     return files
 
+def get_content_dozen(content_dict):
+    copy = dict(content_dict)
+    for key in copy.keys():
+        if key not in gregers_dozen.keys():
+            del copy[key]
+    return copy
 
 def list_files():
     last_files = get_stored_files()
@@ -128,16 +131,18 @@ def details(date):
 
     exit(0)
 
-def edit(date):
-    print('editing dozen for date {date}')
+def edit(num):
+    date = today - datetime.timedelta(days=num)
+    print(f'editing dozen for date {date}')
     edit_file = os.path.join(storage, str(date))
 
     if os.path.isfile(edit_file):
-        old_dozen = read_file(edit_file)
+        content = read_file(edit_file)
+        old_dozen = get_content_dozen(content)
         print(f'Your old dozen for {date}')
         dozen_pretty_print(old_dozen)
 
-    user_dozen = get_dozen()
+    user_dozen = get_user_dozen()
     dozen_pretty_print(user_dozen)
     write_file(user_dozen, edit_file)
 
@@ -154,12 +159,13 @@ def check_forgotten():
             print(f'You forgot to log {date}')
         date += day_delta
 
-def statistics(num):
+def statistics(num=None):
     files = get_stored_files(num)
 
     stats = dict()
     for f in files:
-        dozen = read_file(os.path.join(storage, f))
+        content = read_file(os.path.join(storage, f))
+        dozen = get_content_dozen(content)
         stats[f] = sum([dozen[k] for k in dozen.keys() if k not in ['vitamine b12', 'vitamine d3']])
 
     return stats
@@ -186,6 +192,18 @@ def graph(days):
     plot(stats)
     exit(0)
 
+def average():
+    stats = statistics()
+
+    averages = dict()
+    cur_sum = 0
+    for index, (date, sum_of_dozen) in enumerate(stats.items()):
+        cur_sum += sum_of_dozen
+        averages[date] = cur_sum / (index + 1)
+
+    print(tabulate(averages.items(), ['date', 'average'], tablefmt='psql'))
+    exit(0)
+
 def main():
     ap = argparse.ArgumentParser(
             description='Log your daily dozen of plant based essentials.',
@@ -194,14 +212,16 @@ def main():
     ap.add_argument('-l', '--last',
             action='store_true', default=False,
             help='Print last dozen')
-    ap.add_argument('-d', '--details', type=str,
-            help='Print details of a certain date in iso format (e.g. 2018-07-20)')
     ap.add_argument('-e', '--edit', type=int, const=0, nargs='?',
             help='Edit the n-th last entry (e.g. editing yesterday: -e 1) [defaults to 0]')
     ap.add_argument('-s', '--stats', type=int, const=7, nargs='?',
             help='Show the sum of points for the last days (excluding b12, d3) [defaults to 7]')
-    ap.add_argument('-g', '--graph', type=int, const=30, nargs='?',
+    ap.add_argument('--details', type=str,
+            help='Print details of a certain date in iso format (e.g. 2018-07-20)')
+    ap.add_argument('--graph', type=int, const=30, nargs='?',
             help='Plotting statistic using upto the last n logs [defaults to 30].')
+    ap.add_argument('--average', action='store_true', default=False,
+            help='Show the average for each day.')
 
     args = ap.parse_args()
 
@@ -223,13 +243,15 @@ def main():
     elif args.edit is not None:
         if args.edit < 0:
             usage(ap)
-        edit(today - datetime.timedelta(days=args.edit))
+        edit(args.edit)
     elif args.stats is not None:
         stats = statistics(args.stats)
         print(tabulate(stats.items(), ['date', 'sum'], tablefmt='psql'))
         exit(0)
     elif args.graph is not None:
         graph(args.graph)
+    elif args.average:
+        average()
     else:
         today_file = os.path.join(storage, str(today))
 
@@ -239,7 +261,7 @@ def main():
             dozen_pretty_print(content)
             exit(0)
 
-        user_dozen = get_dozen()
+        user_dozen = get_user_dozen()
         dozen_pretty_print(user_dozen)
         write_file(user_dozen, today_file)
 
