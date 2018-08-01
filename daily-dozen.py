@@ -45,7 +45,7 @@ def iso_to_date(isoformat_string):
         date = datetime.date(year, month, day)
         return date
     except:
-        print('error reading date')
+        print('Error reading date')
         quitting()
 
 def read_user_input(text, max_num):
@@ -55,7 +55,7 @@ def read_user_input(text, max_num):
     except ValueError:
         if user_input is 'q':
             quitting()
-        print("Please insert a num or 'q'")
+        print('Please insert a num or \'q\'')
         return read_user_input(text, max_num)
     return min(user_num, max_num)
 
@@ -124,7 +124,7 @@ def details(date):
 
     if os.path.isfile(date_file):
         content = read_file(date_file)
-        print(f'detailed dozen from {date}')
+        print(f'Detailed dozen from {date}')
         dozen_pretty_print(content)
     else:
         print(f'No dozens logged for {date}')
@@ -133,7 +133,7 @@ def details(date):
 
 def edit(num):
     date = today - datetime.timedelta(days=num)
-    print(f'editing dozen for date {date}')
+    print(f'Editing dozen for date {date}')
     edit_file = os.path.join(storage, str(date))
 
     if os.path.isfile(edit_file):
@@ -192,7 +192,7 @@ def graph(days):
     plot(stats)
     exit(0)
 
-def average():
+def average(num=None):
     stats = statistics()
 
     averages = dict()
@@ -201,7 +201,12 @@ def average():
         cur_sum += sum_of_dozen
         averages[date] = cur_sum / (index + 1)
 
-    print(tabulate(averages.items(), ['date', 'average'], tablefmt='psql'))
+    if num is not None:
+        output = averages.items()[-num:]
+    else:
+        output = averages.items()
+
+    print(tabulate(output, ['date', 'average'], tablefmt='psql'))
     exit(0)
 
 def main():
@@ -213,15 +218,15 @@ def main():
             action='store_true', default=False,
             help='Print last dozen')
     ap.add_argument('-e', '--edit', type=int, const=0, nargs='?',
-            help='Edit the n-th last entry (e.g. editing yesterday: -e 1) [defaults to 0]')
+            help='Edit the n-th last entry (e.g. editing yesterday: -e 1) (defaults to 0)')
     ap.add_argument('-s', '--stats', type=int, const=7, nargs='?',
-            help='Show the sum of points for the last days (excluding b12, d3) [defaults to 7]')
+            help='Show the sum of points for the last days (excluding b12, d3) (defaults to 7)')
     ap.add_argument('--details', type=str,
             help='Print details of a certain date in iso format (e.g. 2018-07-20)')
     ap.add_argument('--graph', type=int, const=30, nargs='?',
-            help='Plotting statistic using upto the last n logs [defaults to 30].')
-    ap.add_argument('--average', action='store_true', default=False,
-            help='Show the average for each day.')
+            help='Plotting statistic using upto the last n logs (defaults to 30).')
+    ap.add_argument('--average', type=int, const=30, nargs='?',
+            help='Show the average for each day (defaults to 30).')
 
     args = ap.parse_args()
 
